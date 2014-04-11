@@ -30,11 +30,9 @@
 
 #include "sptw.h"
 
-#include "rasterchunk.h"
 #include "utils.h"
 
 using std::string;
-using sptw::RasterChunk;
 using sptw::Area;
 
 namespace sptw {
@@ -467,6 +465,28 @@ PTIFF* open_raster(string filename) {
 SPTW_ERROR close_raster(PTIFF *ptiff) {
   MPI_File_close(&(ptiff->fh));
   delete ptiff;
+  return SP_None;
+}
+
+SPTW_ERROR fill_stack(std::vector<Area> *write_stack,
+                      Area old_area,
+                      Area written_subset) {
+  const double size_below = old_area.lr.y - written_subset.lr.y;
+  const double size_right = old_area.lr.x - written_subset.lr.x;
+
+  if (size_right > 0.0) {
+    write_stack->push_back(Area(written_subset.lr.x + 1,
+                                old_area.ul.y,
+                                old_area.lr.x,
+                                old_area.lr.y));
+  }
+
+  if (size_below > 0.0) {
+    write_stack->push_back(Area(old_area.ul.x,
+                               written_subset.lr.y + 1,
+                               written_subset.lr.x,
+                               old_area.lr.y));
+  }
   return SP_None;
 }
 
