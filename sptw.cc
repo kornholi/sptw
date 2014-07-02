@@ -509,18 +509,24 @@ Area calculate_tile_intersection(PTIFF *tiff_file,
               subset_lr_y);
 }
 
-int64_t calculate_file_offset(PTIFF *tiff_file,
+int64_t calculate_file_offset(PTIFF *tiff,
                               const int64_t raster_x,
                               const int64_t raster_y) {
-  const int64_t tile_x = raster_x % tiff_file->block_x_size;
-  const int64_t tile_y = raster_y % tiff_file->block_y_size;
-  const int64_t offset_into_tile = (tile_x + (tile_y * tiff_file->block_x_size))
-      * tiff_file->band_type_size
-      * tiff_file->band_count;
-  const int64_t tile_index = (raster_x / tiff_file->block_x_size)
-      + (raster_y / tiff_file->block_y_size) * tiff_file->tiles_across;
+  const int64_t tile_x = raster_x % tiff->block_x_size;
+  const int64_t tile_y = raster_y % tiff->block_y_size;
+  const int64_t offset_into_tile = (tile_x + (tile_y * tiff->block_x_size))
+      * tiff->band_type_size
+      * tiff->band_count;
+  const int64_t tile_index = (raster_x / tiff->block_x_size)
+      + (raster_y / tiff->block_y_size) * tiff->tiles_across;
 
-  return tiff_file->tile_offsets[tile_index] + offset_into_tile;
+  const auto tiles_per_image = tiff->tiles_across * tiff->tiles_down;
+
+  if (tile_index > tiles_per_image) {
+      std::cerr << "SPTW: Writing outside of file bounds! Corruption will occur." << std::endl;
+  }
+
+  return tiff->tile_offsets[tile_index] + offset_into_tile;
 }
 
 SPTW_ERROR write_subset(PTIFF *tiff_file,
